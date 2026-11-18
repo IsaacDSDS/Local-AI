@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "local-ai"
+version = "0.1.0"
+description = "Let Claude orchestrate and a local LLM do the heavy lifting: delegate token-hungry work to a model on your own GPU."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = []  # standard library only, on purpose
+
+[project.scripts]
+lai = "local_ai.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
