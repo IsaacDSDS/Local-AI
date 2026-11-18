@@ -95,34 +95,46 @@ def run_task(
     budget = int(model.context_tokens() * 0.6)
     draft = ""
     output = ""
+    passed = False
 
-    for attempt in range(1, spec.max_attempts + 1):
-        if estimate_tokens(prompt) > budget:
-            raise ContextOverflow(
-                f"The prompt (~{estimate_tokens(prompt)} tokens) does not fit the model's "
-                f"context ({model.context_tokens()}). Pass fewer --context files, or "
-                "summarize them first with `lai ask`."
-            )
-        on_progress(f"attempt {attempt}/{spec.max_attempts}: generating {spec.target}")
-        draft = extract_code(model.complete(prompt, thinking=spec.thinking))
-        if not draft.strip():
-            output = "The model returned no code."
-            prompt = initial_prompt(spec, original)
-            continue
-        workspace.write(spec.target, draft)
-        on_progress(f"attempt {attempt}/{spec.max_attempts}: running `{spec.check}`")
-        result = runner.run(spec.check)
-        output = result.output
-        if result.passed:
-            return TaskOutcome(True, attempt, output)
-        prompt = fix_prompt(spec, draft, tail_lines(output, ERROR_TAIL_LINES))
+    try:
+        for attempt in range(1, spec.max_attempts + 1):
+            if estimate_tokens(prompt) > budget:
+                raise ContextOverflow(
+                    f"The prompt (~{estimate_tokens(prompt)} tokens) does not fit the model's "
+                    f"context ({model.context_tokens()}). Pass fewer --context files, or "
+                    "summarize them first with `lai ask`."
+                )
+            on_progress(f"attempt {attempt}/{spec.max_attempts}: generating {spec.target}")
+            draft = extract_code(model.complete(prompt, thinking=spec.thinking))
+            if not draft.strip():
+                output = "The model returned no code."
+                prompt = initial_prompt(spec, original)
+                continue
+            workspace.write(spec.target, draft)
+            on_progress(f"attempt {attempt}/{spec.max_attempts}: running `{spec.check}`")
+            result = runner.run(spec.check)
+            output = result.output
+            if result.passed:
+                passed = True
+                return TaskOutcome(True, attempt, output)
+            prompt = fix_prompt(spec, draft, tail_lines(output, ERROR_TAIL_LINES))
+    finally:
+        # Runs on failure *and* on any exception (server error, timeout, Ctrl+C):
+        # the target is never left holding a draft that didn't pass.
+        if not passed:
+            failed_path = _restore(spec.target, original, draft, workspace)
 
+    return TaskOutcome(False, spec.max_attempts, output, failed_path)
+
+
+def _restore(target: str, original: str | None, draft: str, workspace: Workspace) -> str | None:
     failed_path: str | None = None
     if draft.strip():
-        failed_path = spec.target + FAILED_SUFFIX
+        failed_path = target + FAILED_SUFFIX
         workspace.write(failed_path, draft)
     if original is None:
-        workspace.delete(spec.target)
+        workspace.delete(target)
     else:
-        workspace.write(spec.target, original)
-    return TaskOutcome(False, spec.max_attempts, output, failed_path)
+        workspace.write(target, original)
+    return failed_path

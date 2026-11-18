@@ -10,18 +10,19 @@ huge files, writes the first drafts and fixes its own mistakes until the tests p
 An example run (timings illustrative):
 
 ```text
-$ lai task tests/test_dates.py \
-    -i "pytest tests for parse_date: valid formats, invalid input, empty string" \
-    -c "pytest tests/test_dates.py" --context src/dates.py
-[lai     0s] attempt 1/3: generating tests/test_dates.py
-[lai    41s] attempt 1/3: running `pytest tests/test_dates.py`
-[lai    43s] attempt 2/3: generating tests/test_dates.py
-[lai    79s] attempt 2/3: running `pytest tests/test_dates.py`
-OK: tests/test_dates.py passes `pytest tests/test_dates.py` (attempt 2)
+$ lai task src/slugify.py -i "slugify(text): lowercase, ASCII only, words joined by hyphens" \
+    -c "pytest tests/test_slugify.py" --context tests/test_slugify.py
+[lai     0s] attempt 1/3: generating src/slugify.py
+[lai    38s] model replied in 38s (thinking on: 2140 chars of reasoning, 412 chars of answer)
+[lai    38s] attempt 1/3: running `pytest tests/test_slugify.py`
+[lai    39s] attempt 2/3: generating src/slugify.py
+[lai    71s] model replied in 32s (thinking on: 1650 chars of reasoning, 455 chars of answer)
+[lai    71s] attempt 2/3: running `pytest tests/test_slugify.py`
+OK: src/slugify.py passes `pytest tests/test_slugify.py` (attempt 2)
 ```
 
-Claude wrote one line and read one line. The two drafts, the failing run and the
-fix never entered its context.
+Claude wrote one line and read one line. The two drafts, the failing test run
+and the fix never entered its context.
 
 ## The idea
 
@@ -130,7 +131,8 @@ Claude Code can also run entirely on the local model when the plan's limit is
 reached, since colibri speaks the Anthropic Messages API too:
 
 ```bash
-ANTHROPIC_BASE_URL=http://127.0.0.1:8000 ANTHROPIC_API_KEY=local claude
+ANTHROPIC_BASE_URL=http://127.0.0.1:8000 ANTHROPIC_API_KEY=local \
+  ANTHROPIC_MODEL=<model id from `lai status`> claude
 ```
 
 (Not yet measured here; expect a much weaker agent.)
@@ -172,7 +174,8 @@ knowing:
 python -m unittest discover -s tests -t .     # with the package installed
 ```
 
-CI runs them on Linux and Windows.
+CI runs them on Linux and Windows (Python 3.10 and 3.13). They use fakes;
+nothing in CI talks to a real model.
 
 ## Roadmap
 

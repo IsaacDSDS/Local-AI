@@ -14,7 +14,9 @@ These points need a real server to confirm. Tick them and fix the code if one fa
 
 ## Thinking
 
-- [ ] `lai ask "what is 17*23?"` returns only the answer: no `<think>` text. If
+- [ ] `lai ask "what is 17*23?"` shows a progress line with **more than 0 chars
+      of reasoning** (otherwise thinking is silently off) and prints only the
+      answer: no `<think>` text. If
       reasoning leaks into the answer, look at the raw response
       (`curl` below) and adjust `split_reasoning` / `LocalLLM.chat`.
 - [ ] `lai ask --no-think "what is 17*23?"` answers without reasoning and clearly
@@ -45,8 +47,10 @@ curl -s http://127.0.0.1:8000/v1/chat/completions -H 'Content-Type: application/
 - [ ] A `lai task` run longer than 2 minutes doesn't get killed by the Bash tool
       (it should run in the background or with a 600000 ms timeout).
 - [ ] On Windows, `lai task -c "..."` runs the check in Git Bash (bash syntax works).
+- [ ] From Claude Code's Bash tool, `lai ask "q" somefile` (no pipe) answers and
+      doesn't hang waiting for stdin.
 
 ## Fallback: Claude Code fully local
 
-- [ ] `ANTHROPIC_BASE_URL=http://127.0.0.1:8000 ANTHROPIC_API_KEY=local claude`
+- [ ] `ANTHROPIC_BASE_URL=http://127.0.0.1:8000 ANTHROPIC_API_KEY=local ANTHROPIC_MODEL=<model id> claude`
       starts and can edit a file. Note how usable it is.

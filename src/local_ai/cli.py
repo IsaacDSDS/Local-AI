@@ -62,9 +62,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     _force_utf8()
     args = build_parser().parse_args(argv)
-    llm = LocalLLM(Settings.from_env(), max_tokens=args.max_tokens)
+    progress = _progress_printer(args.quiet)
+    llm = LocalLLM(Settings.from_env(), max_tokens=args.max_tokens, on_progress=progress)
     try:
-        return args.handler(args, llm, _progress_printer(args.quiet))
+        return args.handler(args, llm, progress)
     except LaiError as e:
         print(f"lai: {e}", file=sys.stderr)
         return 2

@@ -40,7 +40,7 @@ def run(args: argparse.Namespace, llm: LocalLLM, progress) -> int:
             sources.append(Source("stdin", piped))
     workspace = FsWorkspace()
     for f in args.files:
-        content = workspace.read(f)
+        content = workspace.read(f, lenient=True)
         if content is None:
             print(f"lai: file not found: {f}", file=sys.stderr)
             return 2

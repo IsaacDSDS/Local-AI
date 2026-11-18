@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
+from typing import Callable
 
 from local_ai.core.config import Settings
 from local_ai.core.errors import EmptyAnswer, ServerUnavailable
@@ -25,9 +27,15 @@ class ChatResult:
 class LocalLLM:
     """Implements shared.ports.ChatModel against an OpenAI-compatible server."""
 
-    def __init__(self, settings: Settings, max_tokens: int | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        max_tokens: int | None = None,
+        on_progress: Callable[[str], None] = lambda _: None,
+    ) -> None:
         self.settings = settings
         self.max_tokens = max_tokens
+        self.on_progress = on_progress
         self._models: list[dict] | None = None
 
     # -- server info -------------------------------------------------------
@@ -75,7 +83,14 @@ class LocalLLM:
         return ChatResult(answer, reasoning, choice.get("finish_reason"), data.get("usage") or {})
 
     def complete(self, prompt: str, *, thinking: bool = True, max_tokens: int | None = None) -> str:
+        start = time.monotonic()
         result = self.chat(prompt, thinking=thinking, max_tokens=max_tokens or self.max_tokens)
+        # Reasoning size is reported so "thinking" being silently off is visible.
+        self.on_progress(
+            f"model replied in {time.monotonic() - start:.0f}s "
+            f"(thinking {'on' if thinking else 'off'}: {len(result.reasoning)} chars of "
+            f"reasoning, {len(result.answer)} chars of answer)"
+        )
         if not result.answer:
             if result.finish_reason == "length":
                 raise EmptyAnswer(

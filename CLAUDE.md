@@ -30,7 +30,7 @@ keep the README, code and commit history presentable, and everything in English.
 - **Checks run in bash** (Git Bash on Windows, never System32's WSL `bash.exe`),
   matching Claude Code's Bash tool. `PYTHONDONTWRITEBYTECODE=1` is set for checks
   because same-second, same-size rewrites made Python run stale `.pyc` files.
-- **On task failure the original file is restored** and the draft saved as
+- **On task failure or any exception (server error, timeout, Ctrl+C) the original file is restored** and the draft saved as
   `<file>.lai-failed`.
 - **stdin is read only when it's a pipe or a file**, so agent shells don't hang.
 

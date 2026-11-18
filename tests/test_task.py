@@ -59,6 +59,19 @@ class RunTaskTest(unittest.TestCase):
         self.assertTrue(out.passed)
         self.assertEqual(len(runner.commands), 1)
 
+    def test_exception_mid_loop_still_restores(self):
+        class Boom(ScriptedModel):
+            def complete(self, prompt, *, thinking=True):
+                if self.prompts:
+                    raise TimeoutError("server died")
+                return super().complete(prompt, thinking=thinking)
+
+        ws = MemoryWorkspace({"calc.py": "original\n"})
+        with self.assertRaises(TimeoutError):
+            run_task(spec(), Boom(["```\nv1\n```"]), ScriptedRunner([FAIL]), ws)
+        self.assertEqual(ws.files["calc.py"], "original\n")
+        self.assertEqual(ws.files["calc.py.lai-failed"], "v1\n")
+
     def test_oversized_context_is_refused(self):
         with self.assertRaises(ContextOverflow):
             run_task(spec(context={"huge.py": "x" * 100_000}), ScriptedModel([], context=4096),
